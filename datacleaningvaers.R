@@ -9,7 +9,6 @@ clean_vaers_year <- function(data_file, vax_file) {
   data <- read_csv(data_file, show_col_types = FALSE)
   vax  <- read_csv(vax_file,  show_col_types = FALSE)
   
-  # ---- FIX: force join key type to match ----
   data <- data %>% mutate(VAERS_ID = as.character(VAERS_ID))
   vax  <- vax  %>% mutate(VAERS_ID = as.character(VAERS_ID))
   
@@ -24,7 +23,7 @@ clean_vaers_year <- function(data_file, vax_file) {
       VAX_NAME = paste(unique(VAX_NAME), collapse = ", "),
       .groups = "drop"
     ) %>%
-    mutate(VAERS_ID = as.character(VAERS_ID))  # extra safety
+    mutate(VAERS_ID = as.character(VAERS_ID))  
   
   vaers <- data %>%
     left_join(vax_summary, by = "VAERS_ID")
