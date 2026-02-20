@@ -1,0 +1,37 @@
+Assumptions made to clean data
+
+1) Patients only went to the emergency room/department when they experienced a servere reaction. Severe reactions are counted as Died, life threatening, hospital, er visit, ed visit, emergency stay, disable
+
+2) The narrative columns containing lab data and symptom text were too varied per patient to be meaningful predictors
+
+3) Internal information collected by VAERS has no meaningful impact on the severity of the vaccine. Report_Date, Todays_Date, SPLTTYPE, ORDER, and FORM_TYPE were removed
+
+3) Date Died and recovered occur later in the timeline than the vaccine reaction and therefore cannot be used as predictors
+
+Note: We symptoms also falls in this category as Death is recorded symptom
+
+4) Calculated Age conveys the same information as Age in years, so those columns will be omitted
+
+5) There are no instances where the variable was not missing Hospdays and Hospital was missing, so Hospdays provides no additional information for severity
+
+6) V_Fundby is only on the VAERS1 form, so is very missing in our data that primarily uses VAERS2, so that variable will be eliminated
+
+7) There are several variables where NA was used in place of No. The values for these variables were changed to reflect this. These were DIED, L_THREAT, ER_VISIT, ER_ED_VISIT, HOSPITAL, X_STAY, DISABLE, BIRTH DEFECT, OFC_VISIT. 
+
+Prior Vax is also in this category as it is only filled in when there was a prior vaccine event. Though the prior events vary greatly, making a likert variable would be subject and time consuming, so we will make it binary.
+
+8) Some Factors have both yes and no, but also have missing values. We do not know if the value is missing due to it being unknown or if the doctor left it blank in place of a NO. For our own uncertaintly, we are classifying these missing values as unknown, even though it might skew the distribution
+
+For these, we create a new level called UNK for unknown. Some variables already have an unknown category, so NA values will be added to them.
+
+9) There are certain variables that may be good predictors, but are very missing. We would like to add these to the dataset with an UNK level and see if we still want them after EDA. These variables are CUR_ILL, HISTORY, OTHER_MEDS, and ALLERGIES. 
+
+We created factors for these variables by categorizing them in broad categories. A sub-string search for key words with the case_when function was done to assign values. This function uses the first value it encounters, so factor levels were arranged in a subjective order of serverity. 
+
+10) Vax type and manufacturer were consolidated in a similar manner as above
+
+11) VAX_NAME is more specific to the variables named above, but is not as good at fitting into categories, and therefore is not as good at being a predictor
+
+12) State had too many values to be a valid factor for a model. We used state to group by region. We then imputed the value of region using MissRanger
+
+13) Numeric variables that were missing were imputed using MissRanger

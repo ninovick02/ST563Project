@@ -16,7 +16,6 @@ df = rbind(df2018, df2019, df2020, df2021, df2022, df2023) |>
 miss_per = colMeans(is.na(df))
 round(miss_per, 2)
 
-
 # Finding all the columns with more than 50% NA
 cols_to_take_out = names(miss_per[miss_per > .5])
 cols_to_take_out
@@ -71,9 +70,9 @@ df_factored <- df_factored |>
       is.na(OTHER_MEDS) ~ NA_character_, 
       str_detect(str_to_lower(OTHER_MEDS), "lisinopril|amlodipine|atorvastatin|warfarin|statin|blood pressure|aspirin") ~ "Cardiovascular",
       str_detect(str_to_lower(OTHER_MEDS), "fluoxetine|carbamazepine|levetiracetam|ambien|sertraline|xanax") ~ "Neuro/Psych",
-      str_detect(str_to_lower(OTHER_MEDS), "vitamin|calcium|magnesium|d3|b12|iron|supplement") ~ "Supplements",
       str_detect(str_to_lower(OTHER_MEDS), "albuterol|prednisone") ~ "Resp",
       str_detect(str_to_lower(OTHER_MEDS), "advil|motrin|ibuprofen|tylenol") ~ "Anti-Inflam",
+      str_detect(str_to_lower(OTHER_MEDS), "vitamin|calcium|magnesium|d3|b12|iron|supplement") ~ "Supplements",
       str_detect(str_to_lower(OTHER_MEDS), "no|none|none known|nka|none stated|nkda|non") ~ "None",
       str_detect(str_to_lower(OTHER_MEDS), "unk|unknown|unk|n/a|na") ~ "UNK",
       TRUE ~ "Other"
