@@ -6,32 +6,32 @@ Assumptions made to clean data
 
 3) Internal information collected by VAERS has no meaningful impact on the severity of the vaccine. Report_Date, Todays_Date, SPLTTYPE, ORDER, and FORM_TYPE were removed
 
-3) Date Died and recovered occur later in the timeline than the vaccine reaction and therefore cannot be used as predictors
+4) Date Died and recovered occur later in the timeline than the vaccine reaction and therefore cannot be used as predictors
 
 Note: We symptoms also falls in this category as Death is recorded symptom
 
-4) Calculated Age conveys the same information as Age in years, so those columns will be omitted
+5) Calculated Age conveys the same information as Age in years, so those columns will be omitted
 
-5) There are no instances where the variable was not missing Hospdays and Hospital was missing, so Hospdays provides no additional information for severity
+6) There are no instances where the variable was not missing Hospdays and Hospital was missing, so Hospdays provides no additional information for severity
 
-6) V_Fundby is only on the VAERS1 form, so is very missing in our data that primarily uses VAERS2, so that variable will be eliminated
+7) V_Fundby is very missing in our data and will not be a good predictor. This is likely because is only on the VAERS1 form and our data primarily uses VAERS2. Therefore, that variable will be removed
 
-7) There are several variables where NA was used in place of No. The values for these variables were changed to reflect this. These were DIED, L_THREAT, ER_VISIT, ER_ED_VISIT, HOSPITAL, X_STAY, DISABLE, BIRTH DEFECT, OFC_VISIT. 
+8) There are several variables where NA was used in place of No. The values for these variables were changed to reflect this. These were DIED, L_THREAT, ER_VISIT, ER_ED_VISIT, HOSPITAL, X_STAY, DISABLE, BIRTH DEFECT, OFC_VISIT. 
 
-Prior Vax is also in this category as it is only filled in when there was a prior vaccine event. Though the prior events vary greatly, making a likert variable would be subject and time consuming, so we will make it binary.
+Prior Vax is also in this category as it is only filled in when there was a prior vaccine event. Though the prior events vary greatly, making a likert variable would be subject and time consuming. We will make it binary with any response as Yes, and an NA as No.
 
-8) Some Factors have both yes and no, but also have missing values. We do not know if the value is missing due to it being unknown or if the doctor left it blank in place of a NO. For our own uncertaintly, we are classifying these missing values as unknown, even though it might skew the distribution
+9) Some factors have a level where unknown was recorded, but still have missing values. If the missing values are less than 20% of the data, we will impute the values. If it is more than 20%, we will not impute
 
-For these, we create a new level called UNK for unknown. Some variables already have an unknown category, so NA values will be added to them.
-
-9) There are certain variables that may be good predictors, but are very missing. We would like to add these to the dataset with an UNK level and see if we still want them after EDA. These variables are CUR_ILL, HISTORY, OTHER_MEDS, and ALLERGIES. 
+10) There are certain variables that may be good predictors, but are very missing. We would like to add these to the dataset for now. We will see if we still want them after EDA. These variables are CUR_ILL, HISTORY, OTHER_MEDS, and ALLERGIES. 
 
 We created factors for these variables by categorizing them in broad categories. A sub-string search for key words with the case_when function was done to assign values. This function uses the first value it encounters, so factor levels were arranged in a subjective order of serverity. 
 
-10) Vax type and manufacturer were consolidated in a similar manner as above
+Note: Written N/A will be treated as a no, since that is the typical application of the term in the non-tech world
 
-11) VAX_NAME is more specific to the variables named above, but is not as good at fitting into categories, and therefore is not as good at being a predictor
+11) Vax type and manufacturer were consolidated in a similar manner as above
 
-12) State had too many values to be a valid factor for a model. We used state to group by region. We then imputed the value of region using MissRanger
+12) VAX_NAME is more specific to the variables named above, but is not as good at fitting into categories, and therefore is not as good at being a predictor
 
-13) Numeric variables that were missing were imputed using MissRanger
+13) State had too many values to be a valid factor for a model. We used state to group by region. 
+
+14) Numeric variables that were missing were imputed using MissRanger
