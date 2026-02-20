@@ -21,17 +21,17 @@ round(miss_per, 2)
 cols_to_take_out = names(miss_per[miss_per > .5])
 cols_to_take_out
 
-# Seeing if HOSPDAYS is needed (are there any entries where hopday is filled, but hospital is not)
+# Seeing if HOSPDAYS is needed (are there any entries where hospday is filled, but hospital is not)
 is_HOSPDAYS_needed = df |>
   select(HOSPITAL, HOSPDAYS) |>
   filter(!is.na(HOSPITAL) | !is.na(HOSPDAYS)) |>
   filter(is.na(HOSPITAL) & !is.na(HOSPDAYS))
-is_HOSPDAYS_needed ## NO
+is_HOSPDAYS_needed ## NO. We do not need it for a response indicator
 
-# Creating names of all variables that contribute to the response
+# Creating names of all variables that contribute to the response 
 response_indicators = c("DIED", "L_THREAT", "ER_VISIT", "HOSPITAL", "DISABLE", "ER_ED_VISIT")
 
-# Making sure that the columns that contribute to the response stay in the data
+# Making sure that the columns that contribute to the response stay in the data (even though we will not use them)
 cols_to_take_out  = setdiff(cols_to_take_out, response_indicators)
 cols_to_take_out = cols_to_take_out[-which(cols_to_take_out == "ALLERGIES")]
 
@@ -46,48 +46,10 @@ df_temp2 = df |> select("VAX_TYPE", "VAX_NAME", "VAX_MANU")
 
 # Using AI (Google Gemini) to find factors for the character/factor values (including an NA factor)
 #=====================================================================================
-library(dplyr)
-library(stringr)
 
-# --- 1. CLEANING HELPER ---
-# Converts common "None" strings to NA
-library(tidyverse)
-
-# Cleaning chr string
-clean_and_relabel <- function(column) {
-  # 1. Standardize formatting
-  column <- as.character(column) %>% 
-    iconv(to = "UTF-8", sub = "") %>% 
-    str_trim() %>% 
-    str_to_lower()
-  
-  # 2. Map specific groups to your preferred labels
-  column <- case_match(
-    column,
-    # Values becoming NA
-    c(".", "") ~ NA,
-    
-    # Values becoming "NO"
-    c("no", "none", "none known", "nka", "none stated", "non", "nkda") ~ "none",
-    
-    # Values becoming "UNK"
-    c("unknown", "unk", "n/a", "na") ~ "UNK",
-    
-    # Keep everything else as is
-    .default = column
-  )
-  
-  return(column)
-}
-
-
-
-# Apply it to your data
-df_factored_redo <- df %>% 
-  mutate(across(c("ALLERGIES", "HISTORY"), clean_and_relabel))
 
 # Apply to your dataframe
-df_factored <- df_factored_redo
+df_factored[c("HISTORY", "ALLERGIES")] <- df[c("HISTORY", "ALLERGIES")]
 
 # --- 2. FILE 1 CATEGORIZATION ---
 # Note: Using case_when, which uses the FIRST True value. The following are arranged by importance to investigators
@@ -114,31 +76,6 @@ df_factored <- df_factored |>
       str_detect(str_to_lower(OTHER_MEDS), "advil|motrin|ibuprofen|tylenol") ~ "Anti-Inflam",
       str_detect(str_to_lower(OTHER_MEDS), "no|none|none known|nka|none stated|nkda|non") ~ "None",
       str_detect(str_to_lower(OTHER_MEDS), "unk|unknown|unk|n/a|na") ~ "UNK",
-      TRUE ~ "Other"
-    ),
-    
-    # Medical History Systems
-    HISTORY = case_when(
-      str_detect(str_to_lower(HISTORY), "ms|multiple sclerosis|autoimmune|lupus|arthritis") ~ "Autoimmune",
-      str_detect(str_to_lower(HISTORY), "cancer") ~ "Cancer",
-      str_detect(str_to_lower(HISTORY), "diabetes|hypothyroidism|thyroid|metabolic") ~ "Metabolic",
-      str_detect(str_to_lower(HISTORY), "hypertension|afib|clotting|cholesterol|heart|cardiac") ~ "Cardiovascular",
-      str_detect(str_to_lower(HISTORY), "asthma|copd|respiratory|lung") ~ "Respiratory",
-      str_detect(str_to_lower(HISTORY), "no|none|none known|nka|none stated|nkda") ~ "None",
-      str_detect(str_to_lower(HISTORY), "unk|unknown|unk|n/a| na") ~ "UNK",
-      is.na(HISTORY) ~ NA_character_, 
-      TRUE ~ "Other"
-    ),
-    
-    # Allergy Triggers
-    ALLERGIES = case_when(
-      str_detect(str_to_lower(ALLERGIES), "amoxicillin|penicillin|sulfa|antibiotic") ~ "Antibiotics",
-      str_detect(str_to_lower(ALLERGIES), "tylenol|codeine|aspirin|ibuprofen|nsaid|morphine") ~ "Pain Meds/NSAIDs",
-      str_detect(str_to_lower(ALLERGIES), "latex|nickel|betadine|tape|pollen|environmental") ~ "Env/Material",
-      str_detect(str_to_lower(ALLERGIES), "peanut|shellfish|egg|dairy") ~ "Food",
-      str_detect(str_to_lower(ALLERGIES), "none") ~ "None",
-      str_detect(str_to_lower(ALLERGIES), "unk") ~ "UNK",
-      is.na(ALLERGIES) ~ NA_character_,
       TRUE ~ "Other"
     )
   ) 
@@ -178,6 +115,34 @@ df_factored <- df_factored %>%
       str_detect(VAX_MANU, "GSK|GLAXO") ~ "GSK",
       str_detect(VAX_MANU, "MERCK|NOVARTIS|SEQIRUS|MEDIMMUNE") ~ "Other Major",
       str_detect(str_to_lower(OTHER_MEDS), "no|none|none known|nka|none stated|nkda") ~ "None",
+      str_detect(str_to_lower(OTHER_MEDS), "unk|unknown|unk|n/a|na") ~ "UNK",
+      is.na(ALLERGIES) ~ NA_character_,
+      TRUE ~ "Other"
+    )
+  )
+
+df_factored <- df_factored |>
+  mutate(
+    # Medical History Systems
+    HISTORY = case_when(
+      str_detect(str_to_lower(HISTORY), "ms|multiple sclerosis|autoimmune|lupus|arthritis") ~ "Autoimmune",
+      str_detect(str_to_lower(HISTORY), "cancer") ~ "Cancer",
+      str_detect(str_to_lower(HISTORY), "diabetes|hypothyroidism|thyroid|metabolic") ~ "Metabolic",
+      str_detect(str_to_lower(HISTORY), "hypertension|afib|clotting|cholesterol|heart|cardiac") ~ "Cardiovascular",
+      str_detect(str_to_lower(HISTORY), "asthma|copd|respiratory|lung") ~ "Respiratory",
+      str_detect(str_to_lower(HISTORY), "no|none|none known|nka|none stated|nkda") ~ "None",
+      str_detect(str_to_lower(HISTORY), "unk|unknown|unk|n/a|na") ~ "UNK",
+      is.na(HISTORY) ~ NA_character_, 
+      TRUE ~ "Other"
+    ),
+    
+    # Allergy Triggers
+    ALLERGIES = case_when(
+      str_detect(str_to_lower(ALLERGIES), "amoxicillin|penicillin|sulfa|antibiotic") ~ "Antibiotics",
+      str_detect(str_to_lower(ALLERGIES), "tylenol|codeine|aspirin|ibuprofen|nsaid|morphine") ~ "Pain Meds/NSAIDs",
+      str_detect(str_to_lower(ALLERGIES), "latex|nickel|betadine|tape|pollen|environmental") ~ "Env/Material",
+      str_detect(str_to_lower(ALLERGIES), "peanut|shellfish|egg|dairy") ~ "Food",
+      str_detect(str_to_lower(OTHER_MEDS), "no|none|none known|nka|none stated|nkda|non") ~ "None",
       str_detect(str_to_lower(OTHER_MEDS), "unk|unknown|unk|n/a|na") ~ "UNK",
       is.na(ALLERGIES) ~ NA_character_,
       TRUE ~ "Other"
