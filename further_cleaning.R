@@ -96,6 +96,7 @@ df_factored <- df_factored %>%
       TRUE ~ "Other"
     ),
     
+    # VAX_NAME is too broad (and Vax type gives similar information)
     # # Vaccine Mechanisms
     # VAX_NAME = case_when(
     #   str_detect(VAX_NAME, "PFIZER|MODERNA|MRNA") ~ "mRNA",
