@@ -150,7 +150,7 @@ df_factored <- df_factored |>
   )
 #================================================
 
-# 
+# Losing state, region is easier to have as a predictor
 df_factored = df_factored |> select(-"STATE")
 
 # Cleaning up column types
@@ -160,11 +160,9 @@ df_factored = df_factored |>
   mutate(across(c(AGE_YRS, NUMDAYS, YEAR, NUM_VAX, SEVERE), as.numeric)) |>
   select(-c(TODAYS_DATE, VAX_NAME, RECVDATE))
 
-# Re-arranging column order
+# Re-arranging column order: ID, Response, Predictors, Response indicators
 df_factored <- df_factored[, c("VAERS_ID", "SEVERE", "YEAR", "AGE_YRS", "SEX", "REGION", "VAX_DATE", "ONSET_DATE", "NUMDAYS", "V_ADMINBY", "NUM_VAX", "VAX_TYPE", "VAX_MANU", "HISTORY", "ALLERGIES", "OTHER_MEDS", "RECOVD", "DIED", "L_THREAT", "ER_VISIT", "HOSPITAL", "DISABLE", "ER_ED_VISIT")]
 df_factored
-
-round(colMeans(is.na(df_factored)), 2)
 
 #===============================================================================
 # Imputing values with missing <20%
@@ -196,7 +194,7 @@ df_factored$NUM_VAX  <- df_imputed_sub$NUM_VAX
 df_factored$NUMDAYS  <- df_imputed_sub$NUMDAYS
 
 
-
+# Saving csv file
 write_csv(df_factored, "imputed_df.csv")
 
 
