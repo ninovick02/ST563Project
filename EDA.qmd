@@ -1,0 +1,303 @@
+---
+title: "ST563 Project Interim Report"
+format: html
+editor: visual
+---
+
+# Exploratory Data Analysis
+
+```{r}
+library(tidyverse)
+library(knitr)
+library(ggplot2)
+library(ggcorrplot)
+```
+
+**Loading the Dataset**
+
+```{r}
+df <- read_csv("/Users/subhamkhinchi/Downloads/FIN MATH/ST563/ST563 Project/cleaned_data/vaers_cleaned_2021_2024.csv")
+df
+```
+
+```{r}
+colnames(df)
+```
+
+## Response Variable Analysis
+
+```{r}
+table(df$SEVERE)
+prop.table(table(df$SEVERE))
+```
+
+```{r}
+ggplot(df, aes(x = factor(SEVERE))) +
+  geom_bar() +
+  labs(title = "Distribution of Severity", x = "SEVERE", y = "Count")
+```
+
+The response variable, **SEVERE**, which is a binary indicator variable was constructed from multiple outcome fields (e.g., death, hospitalization, life-threatening illness). The distribution of the response variable shows that approximately **18.7% of reports are classified as severe**, while **81.3% are non-severe**.
+
+This indicates a **moderately imbalanced classification problem**, where severe cases form a minority but still represent a substantial portion of the data. This imbalance suggests that predictive models should be evaluated using metrics beyond simple accuracy, such as recall and area under the ROC curve (AUC), to ensure adequate identification of severe cases.
+
+## Predictors Analysis
+
+### Continuous Variables
+
+```{r}
+summary(df$AGE_YRS)
+summary(df$NUMDAYS)
+
+```
+
+#### AGE_YRS distribution
+
+```{r}
+ggplot(df, aes(x = AGE_YRS)) + geom_histogram(bins = 50) +
+  labs(title = "Distribution of Age", x = "Age (in years)", y = "Count")
+```
+
+The age distribution spans from 0 to 119 years, with a median of approximately 50 years. The distribution is relatively well-behaved, with no extreme outliers after prior data cleaning. This suggests that age is a reliable and informative predictor.
+
+#### NUMDAYS distribution
+
+```{r}
+ggplot(df, aes(x = NUMDAYS)) + geom_histogram(bins =200)+
+  labs(title = "Distribution of NUMDAYS", x = "NUMDAYS", y = "Count")
+```
+
+The distribution of the number of days between vaccination and symptom onset is highly right-skewed. While the median is 1 day, the mean is substantially higher (approximately 37 days), and extreme values exceed 60,000 days. These outliers likely reflect reporting or data entry issues rather than meaningful clinical patterns.
+
+#### Log Transformation of NUMDAYS
+
+```{r}
+ggplot(df, aes(x = log1p(NUMDAYS))) + geom_histogram()+
+  labs(title = "Distribution of log(NUMDAYS)")
+```
+
+A log transformation was applied on NUMDAYS to produce a more interpretable distribution, revealing that most adverse events occur within a short time window following vaccination. This suggests that transformation or truncation of this variable will be important for modeling.
+
+### Categorical Variables
+
+```{r}
+table(df$SEX)
+table(df$REGION)
+table(df$VAX_COVID)
+```
+
+Distribution by SEX
+
+```{r}
+ggplot(df, aes(x = SEX)) + geom_bar()+
+  labs(title = "Distribution of reports by Sex")
+```
+
+The dataset is predominantly composed of female reports, followed by male and a smaller proportion of unknown entries.
+
+Distribution by REGION
+
+```{r}
+ggplot(df, aes(x = REGION)) + geom_bar()+
+  labs(title = "Distribution of reports by Region")
+```
+
+Reports are distributed across four major regions (Midwest, Northeast, South, West), with the South contributing the largest number of reports.
+
+Distribution by COVID VAX
+
+```{r}
+ggplot(df, aes(x = VAX_COVID)) + geom_bar()+
+  labs(title = "Distribution of reports by Covid Vax status")
+```
+
+A large majority of reports involve COVID-19 vaccines, reflecting the time period of the dataset and heightened reporting during the pandemic.
+
+Distribution by Vaccine Administration
+
+```{r}
+ggplot(df, aes(x = V_ADMINBY)) +
+geom_bar()+
+labs(title = "Distribution of Vaccine Administration")
+```
+
+The distribution of the vaccine administration setting (V_ADMINBY) shows that a substantial proportion of reports fall under the “unknown” category, followed by private and public health groups.
+
+## Bivariate Analysis
+
+### SEVERE vs AGE
+
+```{r}
+ggplot(df, aes(x = AGE_YRS, fill = factor(SEVERE))) +
+  geom_density(alpha = 0.4)+
+  labs(title = "Distribution of Age by Severity")
+```
+
+```{r}
+df$AGE_GROUP <- cut(df$AGE_YRS, breaks = c(0,18,40,60,80,120))
+
+ggplot(df, aes(x = AGE_GROUP, fill = factor(SEVERE))) +
+  geom_bar(position = "fill")+
+  labs(title = "Distribution of Age by Severity")
+```
+
+Density plots and grouped analyses reveal a clear relationship between age and severity. Severe cases are more concentrated among older individuals, and the proportion of severe outcomes increases steadily across age groups. This suggests a strong and potentially nonlinear relationship between age and severity, indicating that age is likely one of the most important predictors in the dataset.
+
+### SEVERE vs NUMDAYS
+
+```{r}
+ggplot(df, aes(x = log1p(NUMDAYS), fill = factor(SEVERE))) +
+  geom_density(alpha = 0.4)+
+  labs(title = "Distribution of log(NUMDAYS) by Severity")
+```
+
+The log-transformed distribution suggests that timing may have some predictive value.
+
+### SEVERE vs Categorical Variables
+
+#### SEVERE vs SEX
+
+```{r}
+prop.table(table(df$SEX, df$SEVERE), 1)
+```
+
+```{r}
+ggplot(df, aes(x = SEX, fill = factor(SEVERE))) +
+  geom_bar(position = "fill")+
+  labs(title = "Distribution of Sex by Severity")
+```
+
+There are notable differences in severity across sex categories. Male reports exhibit a little bit higher proportion of severe outcomes compared to female reports. The “unknown” category shows a substantially lower severity rate, which likely reflects incomplete or inconsistent reporting rather than a meaningful clinical pattern. These findings suggest that sex is an important predictor but would require careful handling of missing or ambiguous categories.
+
+#### SEVERE vs REGION
+
+```{r}
+ggplot(df, aes(x = REGION, fill = factor(SEVERE))) +
+  geom_bar(position = "fill")+
+  labs(title = "Distribution of Region by Severity")
+```
+
+Regional differences in severity are relatively modest. While some variation is observed across regions, no strong or consistent pattern emerges. This suggests that geographic location may have a limited role in predicting severity compared to demographic and clinical variables
+
+#### SEVERE vs VAX_COVID
+
+```{r}
+prop.table(table(df$VAX_COVID, df$SEVERE), 1)
+```
+
+```{r}
+ggplot(df, aes(x = factor(VAX_COVID), fill = factor(SEVERE))) +
+  geom_bar(position = "fill")+
+  labs(title = "Distribution of COVID Vaccine status by Severity")
+```
+
+Since our dataset time period(2021-2024) is post COVID-19, reports involving COVID-19 vaccines show a higher proportion of severe outcomes compared to reports involving only non-COVID vaccines.
+
+#### Severe vs Vaccine Administration
+
+```{r}
+ggplot(df, aes(x = V_ADMINBY, fill = factor(SEVERE))) +
+geom_bar(position = "fill")+
+labs(title = "Distribution of Vaccine Administration by Severity")
+```
+
+The relationship between vaccine administration setting and severity shows some variation across categories. Reports from private facilities and senior-related settings show slightly higher proportions of severe outcomes, while the “unknown” category shows lower severity.
+
+#### COVID Manufacturer Analysis
+
+```{r}
+ggplot(df[df$VAX_COVID == 1,], aes(x = COVID_MANU, fill = factor(SEVERE))) +
+  geom_bar(position = "fill") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(title = "COVID Manufacturer by Severity")
+```
+
+Within COVID-19 vaccine reports, variation in severity across manufacturers is observed. However, these differences may be confounded by factors such as rollout timing, population demographics, and reporting behavior.
+
+#### NUM_VAX effect
+
+```{r}
+ggplot(df, aes(x = NUM_VAX, fill = factor(SEVERE))) +
+  geom_bar(position = "fill")+
+  labs(title = "Number of Vaccines by Severity")
+```
+
+The number of vaccines administered (NUM_VAX) shows some variation in severity proportions.While this variable may contribute to predictive models, its effect appears weaker than that of demographic variables such as age and sex.
+
+## Missingness Analysis
+
+```{r}
+colSums(is.na(df)) / nrow(df)
+```
+
+```{r}
+missing_data <- df %>%
+  summarise(across(everything(), ~ sum(is.na(.)) / n())) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "pct_missing") %>%
+  mutate(pct_present = 1 - pct_missing) %>%
+  pivot_longer(cols = c(pct_missing, pct_present), 
+               names_to = "status", 
+               values_to = "percentage")
+ggplot(missing_data, aes(x = reorder(variable, -percentage), y = percentage, fill = status)) +
+  geom_col(position = "stack") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = c("pct_missing" = "black", "pct_present" = "lightgrey"),
+                    labels = c("Missing", "Present")) +
+  coord_flip() +
+  labs(title = "Data Completeness by Variable",
+       x = "Variable Name",
+       y = "Percentage of Data",
+       fill = "Status") +
+  theme_minimal()
+```
+
+The dataset exhibits substantial missingness in several variables, particularly those related to medical history and manufacturer information. For example, variables such as OTHER_MANU, OFC_VISIT, and BIRTH_DEFECT have very high proportions of missing values, while variables such as CUR_ILL_CAT, HISTORY_CAT, and ALLERGIES_CAT also show significant missingness.
+
+## Outliers & Data Quality Checks
+
+### AGE
+
+```{r}
+boxplot(df$AGE_YRS, main='Boxplot of Age', ylab= 'Age')
+```
+
+The AGE_YRS variable appears well-behaved following data cleaning, with values constrained to a plausible range.
+
+### NUMDAYS
+
+```{r}
+boxplot(df$NUMDAYS, main='Boxplot of NUMDAYS', ylab= 'Number of days between vaccination and symptom onset ')
+```
+
+```{r}
+summary(df$NUMDAYS)
+```
+
+Outliers are particularly evident in the NUMDAYS variable with mean around 37 and maximum value reported is 66108,  Extremely large values likely arise from reporting or data entry errors.
+
+## Covariance Matrix
+
+```{r}
+numeric_df <- df %>% select(where(is.numeric))
+
+cov_matrix <- cov(numeric_df, use = "complete.obs")
+
+print(cov_matrix)
+```
+
+```{r}
+df$LOG_NUMDAYS <- log1p(df$NUMDAYS)
+numeric_df <- df %>% 
+  select(SEVERE, YEAR, AGE_YRS, LOG_NUMDAYS, NUM_VAX, VAX_COVID)
+
+cov_matrix <- cov(numeric_df, use = "complete.obs")
+
+print(cov_matrix)
+
+ggcorrplot(cov_matrix, 
+           hc.order = TRUE, 
+           type = "lower",
+           lab = TRUE)
+```
+
+Analysis of relationships among numeric variables suggests that age has a positive association with severity, while other variables such as Log NUMDAYS and other variables shows weaker relationships. Additionally, exploratory interaction analysis indicates that the effect of age on severity persists across both COVID and non-COVID vaccine reports, suggesting that age is a robust predictor regardless of vaccine type.
